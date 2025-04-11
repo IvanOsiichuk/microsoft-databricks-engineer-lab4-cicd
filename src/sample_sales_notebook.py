@@ -1,23 +1,16 @@
-from pyspark.sql.types import *
 from pyspark.sql.functions import *
+from pyspark.sql.types import *
 
-import argparse
-
-
-parser = argparse.ArgumentParser(description="Download and read data")
-parser.add_argument('-c', '--catalog')
-parser.add_argument('-s', '--schema')
-parser.add_argument('-v', '--volume')
-args = parser.parse_args()
-
-catalog = args.catalog
-schema = args.schema
-volume = args.volume
+catalog = dbutils.widgets.get("catalog")
+schema = dbutils.widgets.get("schema")
+volume = dbutils.widgets.get("volume")
 
 directory = "lab4"
 data_path = "data"
 
 work_folder = f"/Volumes/{catalog}/{schema}/{volume}/{directory}/{data_path}"
+
+print("Work path:", work_folder)
 
 salesSchema = StructType([
     StructField("Date", DateType()),
@@ -26,7 +19,7 @@ salesSchema = StructType([
     StructField("Price", FloatType())
 ])
 
-df = spark.read.load(f"{work_folder}/data", format='csv', header='true', schema=salesSchema)
+df = spark.read.load(work_folder, format='csv', header='true', schema=salesSchema)
 df = df.withColumn("Revenue", col("Quantity") * col("Price"))
 
 display(df)

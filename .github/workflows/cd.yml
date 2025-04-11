@@ -1,0 +1,59 @@
+name: CD pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Configure Databricks CLI
+        run: |
+          databricks configure
+
+      - name: Import notebook to workspace
+        env:
+          DATABRICKS_WORKSPACE_PATH: ${{ vars.DATABRICKS_WORKSPACE_PATH }}
+        run: |
+          databricks workspace import --file "src/sample_sales_notebook.py" "$DATABRICKS_WORKSPACE_PATH/imported_notebook" --language PYTHON --overwrite
+
+      - name: Run Databricks Job
+        env:
+          CATALOG: ${{ vars.DATABRICKS_CATALOG }}
+          SCHEMA: ${{ vars.DATABRICKS_SCHEMA }}
+          VOLUME: ${{ vars.DATABRICKS_VOLUME }}
+        run: |
+          JOB_ID=$(databricks jobs create --json "@ci/job-config.json" | jq -r '.job_id')
+          JSON_BODY=$(jq -n \
+            --arg job_id "$JOB_ID" \
+            --arg catalog "$CATALOG" \
+            --arg schema "$SCHEMA" \
+            --arg volume "$VOLUME" \
+            '{
+              job_id: $job_id,
+              job_parameters: {
+                catalog: $catalog,
+                schema: $schema,
+                volume: $volume
+              }
+            }')
+          
+          databricks jobs run-now --json "$JSON_BODY"

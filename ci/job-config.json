@@ -1,9 +1,14 @@
 {
   "name": "CD pipeline",
-  "existing_cluster_id": "your_cluster_id",
   "timeout_seconds": 1200,
-  "max_retries": 3,
-  "notebook_task": {
-    "notebook_path": "/Workspace/Users/your_username/your_notebook"
-  }
+  "tasks": [
+    {
+      "task_key": "run_notebook",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/iosiichuk@ctoreworkspace.onmicrosoft.com/Azure courses/Implement a data engineering solution using Azure Databricks/[lab4] Implement CI-CD workflows/imported_notebook"
+      },
+      "existing_cluster_id": "0325-103232-2i6g235y",
+      "max_retries": 3
+    }
+  ]
 }
