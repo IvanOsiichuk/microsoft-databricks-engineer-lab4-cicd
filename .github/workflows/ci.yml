@@ -1,0 +1,40 @@
+name: CI pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Configure Databricks CLI
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks configure
+
+      - name: Upload sample data to the volume
+        env:
+          CATALOG: ${{ vars.DATABRICKS_CATALOG }}
+          SCHEMA: ${{ vars.DATABRICKS_SCHEMA }}
+          VOLUME: ${{ vars.DATABRICKS_VOLUME }}
+        run: python src/setup.py --catalog $CATALOG --schema $SCHEMA --volume $VOLUME
